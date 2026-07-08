@@ -9,18 +9,18 @@ A single-page personal portfolio site presenting Dhanush Varanasi (Senior Backen
 
 ## Decisions (locked with user)
 
-| Decision | Choice |
-|---|---|
-| Framework | Next.js (App Router, TypeScript) |
-| Hosting | Vercel |
-| Package manager | Bun |
-| Styling | Tailwind CSS v4 + small custom CSS layer for glass/aurora |
-| Color mode | Dark only |
-| Motion level | Showy (Apple-style scroll storytelling, not confetti) |
-| Animation stack | GSAP + ScrollTrigger, Lenis smooth scroll |
-| Background | Aurora: slow-drifting blurred deep-blue/indigo gradient blobs |
-| Typography | Space Grotesk (headings), Inter (body), JetBrains Mono (technical labels) |
-| Future requirement | Chatbot: `app/api/chat` route + floating chat widget, added later |
+| Decision           | Choice                                                                    |
+| ------------------ | ------------------------------------------------------------------------- |
+| Framework          | Next.js (App Router, TypeScript)                                          |
+| Hosting            | Vercel                                                                    |
+| Package manager    | Bun                                                                       |
+| Styling            | Tailwind CSS v4 + small custom CSS layer for glass/aurora                 |
+| Color mode         | Dark only                                                                 |
+| Motion level       | Showy (Apple-style scroll storytelling, not confetti)                     |
+| Animation stack    | GSAP + ScrollTrigger, Lenis smooth scroll                                 |
+| Background         | Aurora: slow-drifting blurred deep-blue/indigo gradient blobs             |
+| Typography         | Space Grotesk (headings), Inter (body), JetBrains Mono (technical labels) |
+| Future requirement | Chatbot: `app/api/chat` route + floating chat widget, added later         |
 
 ## Architecture
 

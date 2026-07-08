@@ -51,11 +51,13 @@ components/
 ### Task 1: Scaffold project and tooling
 
 **Files:**
+
 - Create: entire Next.js scaffold in repo root (create-next-app)
 - Create: `.prettierrc`, `.prettierignore`
 - Modify: `package.json` (scripts)
 
 **Interfaces:**
+
 - Consumes: nothing
 - Produces: working lint/format/typecheck commands (`bun run lint`, `bun run format`, `bun run typecheck`) used by every later task; import alias `@/*`; dependencies `gsap`, `@gsap/react`, `lenis` available to all later tasks.
 
@@ -130,12 +132,14 @@ git commit -m "chore: scaffold next.js app with tailwind, gsap, lenis, prettier"
 ### Task 2: Theme foundation (globals.css, fonts, layout, aurora)
 
 **Files:**
+
 - Modify: `app/globals.css` (full replacement)
 - Modify: `app/layout.tsx` (full replacement)
 - Create: `components/aurora-background.tsx`
 - Modify: `app/page.tsx` (placeholder replacement)
 
 **Interfaces:**
+
 - Consumes: scaffold from Task 1.
 - Produces: Tailwind utilities `bg-base`, `text-ink`, `text-muted`, `text-accent`, `bg-accent/15`, `border-edge`, `font-heading`, `font-body`, `font-mono`; CSS classes `glass`, `glow-panel`, `aurora`; component `AuroraBackground` (no props). Font CSS variables `--font-space-grotesk`, `--font-inter`, `--font-jetbrains-mono`. Note: `layout.tsx` renders children unwrapped in this task; Task 4 adds the `SmoothScrolling` wrapper.
 
@@ -145,7 +149,8 @@ git commit -m "chore: scaffold next.js app with tailwind, gsap, lenis, prettier"
 @import "tailwindcss";
 
 @theme inline {
-  --font-heading: var(--font-space-grotesk), ui-sans-serif, system-ui, sans-serif;
+  --font-heading:
+    var(--font-space-grotesk), ui-sans-serif, system-ui, sans-serif;
   --font-body: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-jetbrains-mono), ui-monospace, monospace;
 }
@@ -160,7 +165,11 @@ git commit -m "chore: scaffold next.js app with tailwind, gsap, lenis, prettier"
 
 @utility glass {
   background:
-    linear-gradient(135deg, rgba(255, 255, 255, 0.07) 0%, rgba(255, 255, 255, 0.02) 100%),
+    linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.07) 0%,
+      rgba(255, 255, 255, 0.02) 100%
+    ),
     rgba(11, 17, 32, 0.55);
   -webkit-backdrop-filter: blur(20px) saturate(150%);
   backdrop-filter: blur(20px) saturate(150%);
@@ -384,9 +393,11 @@ git commit -m "feat: dark glass theme tokens, fonts, aurora background"
 ### Task 3: Content module
 
 **Files:**
+
 - Create: `lib/content.ts`
 
 **Interfaces:**
+
 - Consumes: nothing.
 - Produces (exact export names consumed by every section task):
   - `site: { name: string; location: string; title: string; heroLine: string; links: SiteLink[] }` where `SiteLink = { label: string; href: string; external: boolean }`
@@ -422,7 +433,11 @@ export const site = {
   heroLine:
     "Senior backend engineer who takes production-grade, cloud-native systems from prototype to production for enterprise clients in regulated domains, now building applied AI and moving toward forward deployed engineering.",
   links: [
-    { label: "Email", href: "mailto:dhanushvaranasi@gmail.com", external: false },
+    {
+      label: "Email",
+      href: "mailto:dhanushvaranasi@gmail.com",
+      external: false,
+    },
     {
       label: "LinkedIn",
       href: "https://linkedin.com/in/dhanushvaranasi",
@@ -695,6 +710,7 @@ git commit -m "feat: add site content module"
 ### Task 4: Motion primitives (SmoothScrolling, Reveal, Magnetic, TiltCard, SectionHeading)
 
 **Files:**
+
 - Create: `components/smooth-scrolling.tsx`
 - Create: `components/reveal.tsx`
 - Create: `components/magnetic.tsx`
@@ -703,6 +719,7 @@ git commit -m "feat: add site content module"
 - Modify: `app/layout.tsx` (wrap children)
 
 **Interfaces:**
+
 - Consumes: deps from Task 1.
 - Produces:
   - `SmoothScrolling({ children: React.ReactNode })` default export
@@ -944,10 +961,10 @@ export default function SectionHeading({
 }: SectionHeadingProps) {
   return (
     <div className="mb-12">
-      <p className="font-mono text-sm tracking-[0.25em] text-accent uppercase">
+      <p className="text-accent font-mono text-sm tracking-[0.25em] uppercase">
         {index} / {label}
       </p>
-      <h2 className="mt-3 font-heading text-4xl font-medium md:text-5xl">
+      <h2 className="font-heading mt-3 text-4xl font-medium md:text-5xl">
         {title}
       </h2>
     </div>
@@ -964,9 +981,9 @@ import SmoothScrolling from "@/components/smooth-scrolling";
 ```
 
 ```tsx
-      <body className="bg-base font-body text-ink antialiased">
-        <SmoothScrolling>{children}</SmoothScrolling>
-      </body>
+<body className="bg-base font-body text-ink antialiased">
+  <SmoothScrolling>{children}</SmoothScrolling>
+</body>
 ```
 
 - [ ] **Step 7: Verify**
@@ -989,10 +1006,12 @@ git commit -m "feat: add smooth scroll and motion primitives"
 ### Task 5: Hero section
 
 **Files:**
+
 - Create: `components/hero.tsx`
 - Modify: `app/page.tsx`
 
 **Interfaces:**
+
 - Consumes: `site` from `@/lib/content`, `Magnetic` from Task 4.
 - Produces: `Hero()` default export; section has `id="top"`.
 
@@ -1049,20 +1068,23 @@ export default function Hero() {
       <div data-hero-inner className="mx-auto w-full max-w-5xl">
         <p
           data-hero-item
-          className="font-mono text-sm tracking-[0.25em] text-accent uppercase"
+          className="text-accent font-mono text-sm tracking-[0.25em] uppercase"
         >
           {site.location}
         </p>
         <h1
           data-hero-item
-          className="mt-6 font-heading text-6xl font-medium tracking-tight md:text-8xl"
+          className="font-heading mt-6 text-6xl font-medium tracking-tight md:text-8xl"
         >
           {site.name}
         </h1>
-        <p data-hero-item className="mt-6 font-mono text-sm text-muted md:text-base">
+        <p
+          data-hero-item
+          className="text-muted mt-6 font-mono text-sm md:text-base"
+        >
           {site.title}
         </p>
-        <p data-hero-item className="mt-8 max-w-2xl text-lg text-muted">
+        <p data-hero-item className="text-muted mt-8 max-w-2xl text-lg">
           {site.heroLine}
         </p>
         <div data-hero-item className="mt-10 flex flex-wrap gap-4">
@@ -1073,7 +1095,7 @@ export default function Hero() {
                 {...(link.external
                   ? { target: "_blank", rel: "noreferrer" }
                   : {})}
-                className="glass inline-block rounded-full px-5 py-2.5 text-sm transition-colors hover:text-accent"
+                className="glass hover:text-accent inline-block rounded-full px-5 py-2.5 text-sm transition-colors"
               >
                 {link.label}
               </a>
@@ -1124,10 +1146,12 @@ git commit -m "feat: hero section with intro stagger and scroll-away scrub"
 ### Task 6: Glass nav with scrollspy
 
 **Files:**
+
 - Create: `components/glass-nav.tsx`
 - Modify: `app/page.tsx`
 
 **Interfaces:**
+
 - Consumes: `navItems` from `@/lib/content`. Requires hero `id="top"` (Task 5); highlights sections by ids `about`, `project`, `experience`, `skills`, `education` (added in Tasks 7-11; observer simply finds nothing until they exist, which is fine).
 - Produces: `GlassNav()` default export.
 
@@ -1242,10 +1266,12 @@ git commit -m "feat: floating glass nav with scrollspy"
 ### Task 7: About section
 
 **Files:**
+
 - Create: `components/about.tsx`
 - Modify: `app/page.tsx`
 
 **Interfaces:**
+
 - Consumes: `about` from `@/lib/content`, `Reveal`, `SectionHeading` from Task 4.
 - Produces: `About()` default export; section `id="about"`.
 
@@ -1264,7 +1290,7 @@ export default function About() {
           <SectionHeading index="01" label="About" title="What I do" />
         </Reveal>
         <Reveal delay={0.1}>
-          <p className="max-w-3xl text-lg leading-relaxed text-muted">
+          <p className="text-muted max-w-3xl text-lg leading-relaxed">
             {about}
           </p>
         </Reveal>
@@ -1296,10 +1322,12 @@ git commit -m "feat: about section"
 ### Task 8: Featured project (Supply Chain Tracer pinned scene)
 
 **Files:**
+
 - Create: `components/featured-project.tsx`
 - Modify: `app/page.tsx`
 
 **Interfaces:**
+
 - Consumes: `project` from `@/lib/content`, `Reveal`, `SectionHeading`.
 - Produces: `FeaturedProject()` default export; section `id="project"`.
 
@@ -1371,12 +1399,15 @@ export default function FeaturedProject() {
               label="Featured Project"
               title={project.title}
             />
-            <p className="-mt-6 mb-8 text-muted">{project.subtitle}</p>
-            <ul className="mb-10 flex flex-wrap gap-2" aria-label="Technologies">
+            <p className="text-muted -mt-6 mb-8">{project.subtitle}</p>
+            <ul
+              className="mb-10 flex flex-wrap gap-2"
+              aria-label="Technologies"
+            >
               {project.tech.map((tech) => (
                 <li
                   key={tech}
-                  className="rounded-full border border-edge px-3 py-1 font-mono text-xs text-muted"
+                  className="border-edge text-muted rounded-full border px-3 py-1 font-mono text-xs"
                 >
                   {tech}
                 </li>
@@ -1391,11 +1422,11 @@ export default function FeaturedProject() {
               <div
                 key={stat.label}
                 data-tracer-stat
-                className="rounded-2xl border border-edge bg-base/40 p-5"
+                className="border-edge bg-base/40 rounded-2xl border p-5"
               >
-                <p className="font-mono text-2xl text-accent">{stat.value}</p>
+                <p className="text-accent font-mono text-2xl">{stat.value}</p>
                 <p className="mt-2 text-sm font-medium">{stat.label}</p>
-                <p className="mt-2 text-xs leading-relaxed text-muted">
+                <p className="text-muted mt-2 text-xs leading-relaxed">
                   {stat.detail}
                 </p>
               </div>
@@ -1410,8 +1441,8 @@ export default function FeaturedProject() {
           </h3>
           <ul className="mt-6 max-w-3xl space-y-4">
             {project.designPoints.map((point) => (
-              <li key={point} className="flex gap-3 text-muted">
-                <span aria-hidden="true" className="mt-1 font-mono text-accent">
+              <li key={point} className="text-muted flex gap-3">
+                <span aria-hidden="true" className="text-accent mt-1 font-mono">
                   /
                 </span>
                 <span className="leading-relaxed">{point}</span>
@@ -1420,7 +1451,7 @@ export default function FeaturedProject() {
           </ul>
         </Reveal>
         <Reveal delay={0.1}>
-          <p className="mt-10 max-w-3xl leading-relaxed text-muted">
+          <p className="text-muted mt-10 max-w-3xl leading-relaxed">
             {project.why}
           </p>
         </Reveal>
@@ -1452,10 +1483,12 @@ git commit -m "feat: supply chain tracer pinned scene"
 ### Task 9: Experience timeline
 
 **Files:**
+
 - Create: `components/experience.tsx`
 - Modify: `app/page.tsx`
 
 **Interfaces:**
+
 - Consumes: `experience` from `@/lib/content`, `Reveal`, `SectionHeading`, `TiltCard`.
 - Produces: `Experience()` default export; section `id="experience"`.
 
@@ -1513,14 +1546,17 @@ export default function Experience() {
           <div
             ref={lineRef}
             aria-hidden="true"
-            className="absolute top-0 bottom-0 left-[7px] w-px bg-gradient-to-b from-accent/70 via-accent/30 to-transparent"
+            className="from-accent/70 via-accent/30 absolute top-0 bottom-0 left-[7px] w-px bg-gradient-to-b to-transparent"
           />
           <ol ref={listRef} className="space-y-10">
             {experience.map((role) => (
-              <li key={`${role.company}-${role.dates}`} className="relative pl-10">
+              <li
+                key={`${role.company}-${role.dates}`}
+                className="relative pl-10"
+              >
                 <span
                   aria-hidden="true"
-                  className="absolute top-2 left-0 h-[15px] w-[15px] rounded-full border border-accent/60 bg-base"
+                  className="border-accent/60 bg-base absolute top-2 left-0 h-[15px] w-[15px] rounded-full border"
                 />
                 <Reveal>
                   <TiltCard>
@@ -1530,18 +1566,21 @@ export default function Experience() {
                           <h3 className="font-heading text-xl font-medium">
                             {role.title}
                           </h3>
-                          <p className="mt-1 text-muted">{role.company}</p>
+                          <p className="text-muted mt-1">{role.company}</p>
                         </div>
-                        <p className="font-mono text-xs text-muted">
+                        <p className="text-muted font-mono text-xs">
                           {role.dates} | {role.location}
                         </p>
                       </header>
                       <ul className="mt-5 space-y-3">
                         {role.bullets.map((bullet) => (
-                          <li key={bullet} className="flex gap-3 text-sm text-muted">
+                          <li
+                            key={bullet}
+                            className="text-muted flex gap-3 text-sm"
+                          >
                             <span
                               aria-hidden="true"
-                              className="mt-0.5 font-mono text-accent"
+                              className="text-accent mt-0.5 font-mono"
                             >
                               /
                             </span>
@@ -1584,10 +1623,12 @@ git commit -m "feat: experience timeline with scroll line draw"
 ### Task 10: Skills section
 
 **Files:**
+
 - Create: `components/skills.tsx`
 - Modify: `app/page.tsx`
 
 **Interfaces:**
+
 - Consumes: `skills` from `@/lib/content`, `Reveal`, `SectionHeading`, `TiltCard`.
 - Produces: `Skills()` default export; section `id="skills"`.
 
@@ -1618,7 +1659,7 @@ export default function Skills() {
                     {group.items.map((item) => (
                       <li
                         key={item}
-                        className="rounded-full border border-edge px-3 py-1 font-mono text-xs text-muted"
+                        className="border-edge text-muted rounded-full border px-3 py-1 font-mono text-xs"
                       >
                         {item}
                       </li>
@@ -1657,11 +1698,13 @@ git commit -m "feat: grouped skills section"
 ### Task 11: Education, certifications, and footer
 
 **Files:**
+
 - Create: `components/education-certs.tsx`
 - Create: `components/footer.tsx`
 - Modify: `app/page.tsx`
 
 **Interfaces:**
+
 - Consumes: `education`, `certifications`, `currentFocus`, `site` from `@/lib/content`, `Reveal`, `SectionHeading`, `Magnetic`.
 - Produces: `EducationCerts()` and `Footer()` default exports; section `id="education"`.
 
@@ -1691,7 +1734,7 @@ export default function EducationCerts() {
                 {education.map((entry) => (
                   <li key={entry.degree}>
                     <p className="font-medium">{entry.degree}</p>
-                    <p className="mt-1 text-sm text-muted">
+                    <p className="text-muted mt-1 text-sm">
                       {entry.school} | {entry.year}
                     </p>
                   </li>
@@ -1706,10 +1749,10 @@ export default function EducationCerts() {
               </h3>
               <ul className="mt-5 space-y-3">
                 {certifications.map((cert) => (
-                  <li key={cert} className="flex gap-3 text-sm text-muted">
+                  <li key={cert} className="text-muted flex gap-3 text-sm">
                     <span
                       aria-hidden="true"
-                      className="mt-0.5 font-mono text-accent"
+                      className="text-accent mt-0.5 font-mono"
                     >
                       /
                     </span>
@@ -1739,7 +1782,7 @@ export default function Footer() {
       <div className="mx-auto max-w-5xl">
         <Reveal>
           <div className="glass rounded-3xl p-8 md:p-12">
-            <p className="max-w-3xl leading-relaxed text-muted">
+            <p className="text-muted max-w-3xl leading-relaxed">
               {currentFocus}
             </p>
             <div className="mt-8 flex flex-wrap gap-4">
@@ -1750,7 +1793,7 @@ export default function Footer() {
                     {...(link.external
                       ? { target: "_blank", rel: "noreferrer" }
                       : {})}
-                    className="glass inline-block rounded-full px-5 py-2.5 text-sm transition-colors hover:text-accent"
+                    className="glass hover:text-accent inline-block rounded-full px-5 py-2.5 text-sm transition-colors"
                   >
                     {link.label}
                   </a>
@@ -1759,7 +1802,7 @@ export default function Footer() {
             </div>
           </div>
         </Reveal>
-        <p className="mt-10 text-center font-mono text-xs text-muted">
+        <p className="text-muted mt-10 text-center font-mono text-xs">
           {site.name} | {site.location}
         </p>
       </div>
@@ -1820,10 +1863,12 @@ git commit -m "feat: education, certifications, footer with focus note"
 ### Task 12: Final polish (metadata, copy audit, cleanup)
 
 **Files:**
+
 - Modify: `app/layout.tsx` (Open Graph metadata)
 - Delete: unused scaffold assets (`public/*.svg` defaults from create-next-app, if present)
 
 **Interfaces:**
+
 - Consumes: everything prior.
 - Produces: final deliverable.
 
