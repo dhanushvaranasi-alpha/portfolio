@@ -55,10 +55,10 @@ A single-page personal portfolio site presenting Dhanush Varanasi (Senior Backen
 
 ## Content mapping (order)
 
-1. Hero: name, primary title ("Forward Deployed Engineer | Senior Backend Engineer | GenAI & Cloud"), hero one-liner, contact links (email, LinkedIn, GitHub, phone, location).
+1. Hero: name, primary title ("Forward Deployed Engineer | Senior Backend Engineer | GenAI & Cloud | Ex-Army"), hero one-liner, contact links (email, LinkedIn, GitHub, phone, location).
 2. About: professional summary from brief.
 3. Featured project: Supply Chain Tracer, framed everywhere as in-progress design targets, never as achieved results.
-4. Experience: EY Associate Project Manager, EY Senior Technical Lead / Technical Lead, EY Senior Software Engineer, Aurigo, Indian Army Officer Cadet, Fintellix. Bullets verbatim.
+4. Experience: EY Associate Project Manager, EY Senior Technical Lead / Technical Lead, EY Senior Software Engineer, Aurigo, Indian Army, Fintellix. Bullets verbatim.
 5. Skills: seven labeled categories from the brief.
 6. Education and certifications.
 7. Footer: contact links plus the short "current focus" note tying the FDE pivot, the applied-AI project, and the regulated-domain thread.
