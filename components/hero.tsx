@@ -54,6 +54,7 @@ export default function Hero() {
         </p>
         <h1
           data-hero-item
+          data-game-collectible="top"
           className="font-heading mt-6 text-6xl font-medium tracking-tight md:text-8xl"
         >
           {site.name}

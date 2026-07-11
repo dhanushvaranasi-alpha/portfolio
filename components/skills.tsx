@@ -10,7 +10,10 @@ export default function Skills() {
         <Reveal>
           <SectionHeading index="04" label="Skills" title="What I work with" />
         </Reveal>
-        <div className="grid gap-5 md:grid-cols-2">
+        <div
+          data-game-collectible="skills"
+          className="grid gap-5 md:grid-cols-2"
+        >
           {skills.map((group, i) => (
             <Reveal key={group.category} delay={(i % 2) * 0.08}>
               <TiltCard className="h-full">

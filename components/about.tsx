@@ -10,7 +10,10 @@ export default function About() {
           <SectionHeading index="01" label="About" title="What I do" />
         </Reveal>
         <Reveal delay={0.1}>
-          <p className="text-muted max-w-3xl text-lg leading-relaxed">
+          <p
+            data-game-collectible="about"
+            className="text-muted max-w-3xl text-lg leading-relaxed"
+          >
             {about}
           </p>
         </Reveal>
