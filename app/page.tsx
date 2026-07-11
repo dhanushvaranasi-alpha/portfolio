@@ -1,5 +1,6 @@
 import About from "@/components/about";
 import AuroraBackground from "@/components/aurora-background";
+import FeaturedProject from "@/components/featured-project";
 import GlassNav from "@/components/glass-nav";
 import Hero from "@/components/hero";
 
@@ -11,6 +12,7 @@ export default function Home() {
       <main>
         <Hero />
         <About />
+        <FeaturedProject />
       </main>
     </>
   );
