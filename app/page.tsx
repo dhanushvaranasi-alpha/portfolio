@@ -1,5 +1,6 @@
 import About from "@/components/about";
 import AuroraBackground from "@/components/aurora-background";
+import Experience from "@/components/experience";
 import FeaturedProject from "@/components/featured-project";
 import GlassNav from "@/components/glass-nav";
 import Hero from "@/components/hero";
@@ -13,6 +14,7 @@ export default function Home() {
         <Hero />
         <About />
         <FeaturedProject />
+        <Experience />
       </main>
     </>
   );
