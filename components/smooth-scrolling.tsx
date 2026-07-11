@@ -30,6 +30,7 @@ export default function SmoothScrolling({
     gsap.ticker.lagSmoothing(0);
 
     return () => {
+      lenis?.off("scroll", ScrollTrigger.update);
       gsap.ticker.remove(update);
     };
   }, [reducedMotion]);
