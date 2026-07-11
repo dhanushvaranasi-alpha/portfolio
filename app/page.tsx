@@ -4,6 +4,7 @@ import EducationCerts from "@/components/education-certs";
 import Experience from "@/components/experience";
 import FeaturedProject from "@/components/featured-project";
 import Footer from "@/components/footer";
+import GameGate from "@/components/game/game-gate";
 import GlassNav from "@/components/glass-nav";
 import Hero from "@/components/hero";
 import Skills from "@/components/skills";
@@ -22,6 +23,7 @@ export default function Home() {
         <EducationCerts />
       </main>
       <Footer />
+      <GameGate />
     </>
   );
 }
