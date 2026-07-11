@@ -4,6 +4,7 @@ import Experience from "@/components/experience";
 import FeaturedProject from "@/components/featured-project";
 import GlassNav from "@/components/glass-nav";
 import Hero from "@/components/hero";
+import Skills from "@/components/skills";
 
 export default function Home() {
   return (
@@ -15,6 +16,7 @@ export default function Home() {
         <About />
         <FeaturedProject />
         <Experience />
+        <Skills />
       </main>
     </>
   );
