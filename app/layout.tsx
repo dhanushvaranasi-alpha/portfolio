@@ -25,6 +25,12 @@ export const metadata: Metadata = {
   title: "Dhanush Varanasi | Forward Deployed Engineer",
   description:
     "Senior backend engineer who takes production-grade, cloud-native systems from prototype to production for enterprise clients in regulated domains, now building applied AI and moving toward forward deployed engineering.",
+  openGraph: {
+    title: "Dhanush Varanasi | Forward Deployed Engineer",
+    description:
+      "Senior backend engineer building production-grade systems and applied AI in regulated domains.",
+    type: "website",
+  },
 };
 
 export default function RootLayout({
