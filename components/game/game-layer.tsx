@@ -8,6 +8,7 @@ import Collectibles, {
   VictoryBurst,
   type OrbAnchor,
 } from "@/components/game/collectibles";
+import Compass from "@/components/game/compass";
 import Hud from "@/components/game/hud";
 import { gameSections, VICTORY_CLIP, type Emote } from "@/lib/game-config";
 import {
@@ -164,6 +165,11 @@ export default function GameLayer({ onHide }: { onHide: () => void }) {
             collected={progress.collected}
             posRef={posRef}
             onCollect={handleCollect}
+          />
+          <Compass
+            anchors={anchors}
+            collected={progress.collected}
+            posRef={posRef}
           />
           {celebrated ? <VictoryBurst posRef={posRef} /> : null}
         </Canvas>
