@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 import { gameEnabled } from "@/lib/config";
 import { HIDDEN_STORAGE_KEY } from "@/lib/game-config";
 
@@ -9,34 +9,62 @@ const GameLayer = dynamic(() => import("@/components/game/game-layer"), {
   ssr: false,
 });
 
-function supportsWebGL(): boolean {
-  try {
-    const canvas = document.createElement("canvas");
-    return Boolean(canvas.getContext("webgl2") ?? canvas.getContext("webgl"));
-  } catch {
-    return false;
-  }
+// ── module-level external store ───────────────────────────────────────────────
+
+const listeners = new Set<() => void>();
+
+function subscribeHidden(listener: () => void): () => void {
+  listeners.add(listener);
+  return () => listeners.delete(listener);
 }
 
-export default function GameGate() {
-  const [ready, setReady] = useState(false);
-  const [hidden, setHidden] = useState(false);
+function notifyListeners() {
+  listeners.forEach((l) => l());
+}
 
-  useEffect(() => {
-    if (!gameEnabled) return;
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    if (!supportsWebGL()) return;
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setHidden(window.localStorage.getItem(HIDDEN_STORAGE_KEY) === "true");
-    setReady(true);
-  }, []);
+export function setHiddenPref(next: boolean) {
+  window.localStorage.setItem(HIDDEN_STORAGE_KEY, String(next));
+  notifyListeners();
+}
 
-  function setHiddenPref(next: boolean) {
-    setHidden(next);
-    window.localStorage.setItem(HIDDEN_STORAGE_KEY, String(next));
+// Probe the canvas only once per module load.
+let _webGLSupported: boolean | null = null;
+function supportsWebGL(): boolean {
+  if (_webGLSupported !== null) return _webGLSupported;
+  try {
+    const canvas = document.createElement("canvas");
+    _webGLSupported = Boolean(
+      canvas.getContext("webgl2") ?? canvas.getContext("webgl"),
+    );
+  } catch {
+    _webGLSupported = false;
   }
+  return _webGLSupported;
+}
 
-  if (!ready) return null;
+function readEligible(): boolean {
+  return (
+    gameEnabled &&
+    !window.matchMedia("(prefers-reduced-motion: reduce)").matches &&
+    supportsWebGL()
+  );
+}
+
+function readHidden(): boolean {
+  return window.localStorage.getItem(HIDDEN_STORAGE_KEY) === "true";
+}
+
+// ── component ─────────────────────────────────────────────────────────────────
+
+export default function GameGate() {
+  const eligible = useSyncExternalStore(
+    subscribeHidden,
+    readEligible,
+    () => false,
+  );
+  const hidden = useSyncExternalStore(subscribeHidden, readHidden, () => true);
+
+  if (!eligible) return null;
   if (hidden) {
     return (
       <button

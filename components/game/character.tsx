@@ -1,4 +1,3 @@
-/* eslint-disable react-hooks/immutability */
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -28,7 +27,12 @@ export default function Character({ emote, posRef }: CharacterProps) {
   const group = useRef<THREE.Group>(null);
   const { scene, animations } = useGLTF(CHARACTER_URL);
   const { actions, mixer } = useAnimations(animations, group);
+  const actionsRef = useRef(actions);
   const { viewport } = useThree();
+
+  useEffect(() => {
+    actionsRef.current = actions;
+  }, [actions]);
 
   const keys = useRef({ left: false, right: false });
   const wantJump = useRef(false);
@@ -44,23 +48,20 @@ export default function Character({ emote, posRef }: CharacterProps) {
     () => window.matchMedia("(pointer: coarse)").matches,
   );
 
-  const playClip = useCallback(
-    (name: string, once = false) => {
-      const action = actions[name];
-      if (!action || current.current === name) return;
-      if (current.current) actions[current.current]?.fadeOut(0.2);
-      action.reset().fadeIn(0.2);
-      if (once) {
-        action.setLoop(THREE.LoopOnce, 1);
-        action.clampWhenFinished = true;
-      } else {
-        action.setLoop(THREE.LoopRepeat, Infinity);
-      }
-      action.play();
-      current.current = name;
-    },
-    [actions],
-  );
+  const playClip = useCallback((name: string, once = false) => {
+    const action = actionsRef.current[name];
+    if (!action || current.current === name) return;
+    if (current.current) actionsRef.current[current.current]?.fadeOut(0.2);
+    action.reset().fadeIn(0.2);
+    if (once) {
+      action.setLoop(THREE.LoopOnce, 1);
+      action.clampWhenFinished = true;
+    } else {
+      action.setLoop(THREE.LoopRepeat, Infinity);
+    }
+    action.play();
+    current.current = name;
+  }, []);
 
   // Return to idle whenever a one-shot clip finishes.
   useEffect(() => {
