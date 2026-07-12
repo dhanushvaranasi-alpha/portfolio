@@ -12,6 +12,7 @@ const GameLayer = dynamic(() => import("@/components/game/game-layer"), {
 // ── module-level external store ───────────────────────────────────────────────
 
 const listeners = new Set<() => void>();
+let hiddenOverride: boolean | null = null;
 
 function subscribeHidden(listener: () => void): () => void {
   listeners.add(listener);
@@ -23,7 +24,10 @@ function notifyListeners() {
 }
 
 export function setHiddenPref(next: boolean) {
-  window.localStorage.setItem(HIDDEN_STORAGE_KEY, String(next));
+  hiddenOverride = next;
+  try {
+    window.localStorage.setItem(HIDDEN_STORAGE_KEY, String(next));
+  } catch {}
   notifyListeners();
 }
 
@@ -51,7 +55,12 @@ function readEligible(): boolean {
 }
 
 function readHidden(): boolean {
-  return window.localStorage.getItem(HIDDEN_STORAGE_KEY) === "true";
+  if (hiddenOverride !== null) return hiddenOverride;
+  try {
+    return window.localStorage.getItem(HIDDEN_STORAGE_KEY) === "true";
+  } catch {
+    return false;
+  }
 }
 
 // ── component ─────────────────────────────────────────────────────────────────

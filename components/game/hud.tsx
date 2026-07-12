@@ -10,6 +10,7 @@ const noopSubscribe = () => () => {};
 
 // Help-seen store: notified whenever markHelpSeen() is called.
 const helpSeenListeners = new Set<() => void>();
+let helpSeenOverride = false;
 
 function subscribeHelpSeen(listener: () => void): () => void {
   helpSeenListeners.add(listener);
@@ -17,7 +18,10 @@ function subscribeHelpSeen(listener: () => void): () => void {
 }
 
 function markHelpSeen() {
-  window.localStorage.setItem(HELP_SEEN_STORAGE_KEY, "true");
+  helpSeenOverride = true;
+  try {
+    window.localStorage.setItem(HELP_SEEN_STORAGE_KEY, "true");
+  } catch {}
   helpSeenListeners.forEach((l) => l());
 }
 
@@ -50,7 +54,14 @@ export default function Hud({
 
   const pulse = useSyncExternalStore(
     subscribeHelpSeen,
-    () => window.localStorage.getItem(HELP_SEEN_STORAGE_KEY) !== "true",
+    () => {
+      if (helpSeenOverride) return false;
+      try {
+        return window.localStorage.getItem(HELP_SEEN_STORAGE_KEY) !== "true";
+      } catch {
+        return false;
+      }
+    },
     () => false,
   );
 
@@ -108,7 +119,7 @@ export default function Hud({
           className="pointer-events-auto fixed inset-0 z-40 flex items-center justify-center px-6"
           role="dialog"
           aria-modal="true"
-          aria-label="Game help"
+          aria-labelledby="game-help-title"
         >
           <button
             type="button"
@@ -117,7 +128,12 @@ export default function Hud({
             className="absolute inset-0 bg-black/40"
           />
           <div className="glass relative max-w-md rounded-3xl p-8">
-            <h2 className="font-heading text-xl font-medium">How to play</h2>
+            <h2
+              id="game-help-title"
+              className="font-heading text-xl font-medium"
+            >
+              How to play
+            </h2>
             {coarse ? (
               <p className="text-muted mt-4 text-sm leading-relaxed">
                 The explorer walks along with you as you scroll and picks up the
@@ -151,6 +167,7 @@ export default function Hud({
             </p>
             <button
               type="button"
+              autoFocus
               onClick={() => setHelpOpen(false)}
               className="glass hover:text-accent mt-6 rounded-full px-5 py-2 text-sm transition-colors"
             >
