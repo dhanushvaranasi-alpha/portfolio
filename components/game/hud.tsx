@@ -91,7 +91,7 @@ export default function Hud({
         </span>
         {complete ? <span className="text-accent">100% explored</span> : null}
         {!coarse ? (
-          <span className="text-muted hidden lg:inline">A/D move | W jump</span>
+          <span className="text-muted hidden lg:inline">W/A/S/D move</span>
         ) : null}
         <button
           type="button"
@@ -136,18 +136,19 @@ export default function Hud({
             </h2>
             {coarse ? (
               <p className="text-muted mt-4 text-sm leading-relaxed">
-                The explorer walks along with you as you scroll and picks up the
-                glowing orbs it passes. Visit every section to reach 100%.
+                The explorer glides toward glowing orbs near your view as you
+                scroll and collects them for you. Visit every section to reach
+                100%.
               </p>
             ) : (
               <dl className="mt-5 space-y-3 font-mono text-sm">
                 <div className="flex justify-between gap-6">
                   <dt className="text-muted">A / D</dt>
-                  <dd>Walk left / right</dd>
+                  <dd>Move left / right</dd>
                 </div>
                 <div className="flex justify-between gap-6">
-                  <dt className="text-muted">W</dt>
-                  <dd>Jump</dd>
+                  <dt className="text-muted">W / S</dt>
+                  <dd>Move up / down</dd>
                 </div>
                 <div className="flex justify-between gap-6">
                   <dt className="text-muted">H</dt>
@@ -160,10 +161,11 @@ export default function Hud({
               </dl>
             )}
             <p className="text-muted mt-5 text-sm leading-relaxed">
-              Glowing orbs sit near the content. Walk or jump into them to
-              collect. Discover every section and collect every orb for a small
-              celebration. The Hide button turns the game off; your choice is
-              remembered.
+              Glowing orbs sit on the content itself. Fly into them to collect,
+              and follow the small arrow around the explorer: it points toward
+              the nearest orb left to find. Discover every section and collect
+              every orb for a small celebration. The Hide button turns the game
+              off; your choice is remembered.
             </p>
             <button
               type="button"
