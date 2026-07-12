@@ -3,13 +3,33 @@
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { Canvas } from "@react-three/fiber";
 import Character from "@/components/game/character";
-import { gameSections, type Emote } from "@/lib/game-config";
+import Collectibles, {
+  measureOrbAnchors,
+  VictoryBurst,
+  type OrbAnchor,
+} from "@/components/game/collectibles";
+import { gameSections, VICTORY_CLIP, type Emote } from "@/lib/game-config";
+import {
+  collectOrb,
+  emptyProgress,
+  isComplete,
+  markVisited,
+  type GameProgress,
+} from "@/lib/game-state";
 
 export default function GameLayer() {
   const [frameloop, setFrameloop] = useState<"always" | "never">("always");
   const [emote, setEmote] = useState<Emote | null>(null);
+  const [anchors, setAnchors] = useState<OrbAnchor[]>([]);
+  const [progress, setProgress] = useState<GameProgress>(emptyProgress);
+  const [celebrated, setCelebrated] = useState(false);
   const emoteKey = useRef(0);
   const posRef = useRef({ x: 0, y: 0 });
+
+  // Refs to avoid stale closures in event callbacks.
+  const anchorsRef = useRef<OrbAnchor[]>([]);
+  const progressRef = useRef<GameProgress>(emptyProgress);
+  const celebratedRef = useRef(false);
 
   const playEmote = useCallback((clip: string) => {
     emoteKey.current += 1;
@@ -25,7 +45,42 @@ export default function GameLayer() {
     return () => document.removeEventListener("visibilitychange", onVisibility);
   }, []);
 
-  // Play a one-shot clip when a mapped section becomes active.
+  // Debounced resize listener re-measures orb positions.
+  // Initial measurement is handled by the IntersectionObserver callback,
+  // which fires immediately on observe() for already-intersecting sections.
+  useEffect(() => {
+    let timer: number | undefined;
+    function onResize() {
+      window.clearTimeout(timer);
+      timer = window.setTimeout(() => {
+        const next = measureOrbAnchors();
+        anchorsRef.current = next;
+        setAnchors(next);
+      }, 200);
+    }
+    window.addEventListener("resize", onResize);
+    return () => {
+      window.clearTimeout(timer);
+      window.removeEventListener("resize", onResize);
+    };
+  }, []);
+
+  // Check for completion transition and trigger celebration in event callbacks.
+  const checkCompletion = useCallback(
+    (nextProgress: GameProgress, currentAnchors: OrbAnchor[]) => {
+      if (celebratedRef.current) return;
+      const sectionIds = gameSections.map((s) => s.id);
+      const orbIds = currentAnchors.map((a) => a.id);
+      if (orbIds.length > 0 && isComplete(nextProgress, sectionIds, orbIds)) {
+        celebratedRef.current = true;
+        setCelebrated(true);
+        playEmote(VICTORY_CLIP);
+      }
+    },
+    [playEmote],
+  );
+
+  // Active section: mark visited, re-measure anchors, play one-shot clip.
   useEffect(() => {
     const sections = gameSections
       .map((section) => ({ section, el: document.getElementById(section.id) }))
@@ -42,14 +97,40 @@ export default function GameLayer() {
         for (const entry of entries) {
           if (!entry.isIntersecting) continue;
           const match = sections.find((s) => s.el === entry.target);
-          if (match?.section.clip) playEmote(match.section.clip);
+          if (!match) continue;
+
+          // Re-measure anchors on each visit (covers initial measurement too).
+          const freshAnchors = measureOrbAnchors();
+          anchorsRef.current = freshAnchors;
+          setAnchors(freshAnchors);
+
+          const nextProgress = markVisited(
+            progressRef.current,
+            match.section.id,
+          );
+          progressRef.current = nextProgress;
+          setProgress(nextProgress);
+
+          checkCompletion(nextProgress, freshAnchors);
+
+          if (match.section.clip) playEmote(match.section.clip);
         }
       },
       { rootMargin: "-40% 0px -40% 0px" },
     );
     sections.forEach((s) => observer.observe(s.el));
     return () => observer.disconnect();
-  }, [playEmote]);
+  }, [playEmote, checkCompletion]);
+
+  const handleCollect = useCallback(
+    (id: string) => {
+      const nextProgress = collectOrb(progressRef.current, id);
+      progressRef.current = nextProgress;
+      setProgress(nextProgress);
+      checkCompletion(nextProgress, anchorsRef.current);
+    },
+    [checkCompletion],
+  );
 
   return (
     <div className="pointer-events-none fixed inset-0 z-40">
@@ -65,6 +146,13 @@ export default function GameLayer() {
           <Suspense fallback={null}>
             <Character emote={emote} posRef={posRef} />
           </Suspense>
+          <Collectibles
+            anchors={anchors}
+            collected={progress.collected}
+            posRef={posRef}
+            onCollect={handleCollect}
+          />
+          {celebrated ? <VictoryBurst posRef={posRef} /> : null}
         </Canvas>
       </div>
     </div>
