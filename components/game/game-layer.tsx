@@ -8,6 +8,7 @@ import Collectibles, {
   VictoryBurst,
   type OrbAnchor,
 } from "@/components/game/collectibles";
+import Hud from "@/components/game/hud";
 import { gameSections, VICTORY_CLIP, type Emote } from "@/lib/game-config";
 import {
   collectOrb,
@@ -17,7 +18,9 @@ import {
   type GameProgress,
 } from "@/lib/game-state";
 
-export default function GameLayer() {
+const sectionIds = gameSections.map((s) => s.id);
+
+export default function GameLayer({ onHide }: { onHide: () => void }) {
   const [frameloop, setFrameloop] = useState<"always" | "never">("always");
   const [emote, setEmote] = useState<Emote | null>(null);
   const [anchors, setAnchors] = useState<OrbAnchor[]>([]);
@@ -69,7 +72,6 @@ export default function GameLayer() {
   const checkCompletion = useCallback(
     (nextProgress: GameProgress, currentAnchors: OrbAnchor[]) => {
       if (celebratedRef.current) return;
-      const sectionIds = gameSections.map((s) => s.id);
       const orbIds = currentAnchors.map((a) => a.id);
       if (orbIds.length > 0 && isComplete(nextProgress, sectionIds, orbIds)) {
         celebratedRef.current = true;
@@ -132,6 +134,12 @@ export default function GameLayer() {
     [checkCompletion],
   );
 
+  const complete = isComplete(
+    progress,
+    sectionIds,
+    anchors.map((a) => a.id),
+  );
+
   return (
     <div className="pointer-events-none fixed inset-0 z-40">
       <div aria-hidden="true" className="absolute inset-0">
@@ -155,6 +163,14 @@ export default function GameLayer() {
           {celebrated ? <VictoryBurst posRef={posRef} /> : null}
         </Canvas>
       </div>
+      <Hud
+        discovered={progress.visited.length}
+        totalSections={sectionIds.length}
+        collectedOrbs={progress.collected.length}
+        totalOrbs={anchors.length}
+        complete={complete}
+        onHide={onHide}
+      />
     </div>
   );
 }

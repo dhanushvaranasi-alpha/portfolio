@@ -76,5 +76,5 @@ export default function GameGate() {
       </button>
     );
   }
-  return <GameLayer />;
+  return <GameLayer onHide={() => setHiddenPref(true)} />;
 }
