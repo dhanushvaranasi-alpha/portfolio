@@ -4,26 +4,56 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { useFrame, useThree } from "@react-three/fiber";
 import { useAnimations, useGLTF } from "@react-three/drei";
+import type { OrbAnchor } from "@/components/game/collectibles";
 import {
   CHARACTER_HEIGHT_PX,
   CHARACTER_MODEL_HEIGHT,
   CHARACTER_URL,
   DEFAULT_CLIP,
-  GRAVITY_PX,
-  GROUND_MARGIN_PX,
-  JUMP_CLIP,
-  JUMP_VELOCITY_PX,
+  EDGE_MARGIN_PX,
+  MOVE_SPEED_PX,
+  REST_POINT,
   WALK_CLIP,
-  WALK_SPEED_PX,
   type Emote,
 } from "@/lib/game-config";
 
 type CharacterProps = {
   emote: Emote | null;
-  posRef: React.MutableRefObject<{ x: number; y: number }>;
+  posRef: React.RefObject<{ x: number; y: number }>;
+  anchors: OrbAnchor[];
+  collected: string[];
 };
 
-export default function Character({ emote, posRef }: CharacterProps) {
+// Nearest uncollected orb currently inside the viewport, in viewport px.
+function nearestOrbTarget(
+  anchors: OrbAnchor[],
+  collected: string[],
+  from: { x: number; y: number },
+  pxW: number,
+  pxH: number,
+): { x: number; y: number } | null {
+  let best: { x: number; y: number } | null = null;
+  let bestDist = Infinity;
+  for (const anchor of anchors) {
+    if (collected.includes(anchor.id)) continue;
+    const vx = anchor.docX - window.scrollX;
+    const vy = anchor.docY - window.scrollY;
+    if (vx < 0 || vx > pxW || vy < 0 || vy > pxH) continue;
+    const dist = Math.hypot(vx - from.x, vy - from.y);
+    if (dist < bestDist) {
+      bestDist = dist;
+      best = { x: vx, y: vy };
+    }
+  }
+  return best;
+}
+
+export default function Character({
+  emote,
+  posRef,
+  anchors,
+  collected,
+}: CharacterProps) {
   const group = useRef<THREE.Group>(null);
   const { scene, animations } = useGLTF(CHARACTER_URL);
   const { actions, mixer } = useAnimations(animations, group);
@@ -34,16 +64,11 @@ export default function Character({ emote, posRef }: CharacterProps) {
     actionsRef.current = actions;
   }, [actions]);
 
-  const keys = useRef({ left: false, right: false });
-  const wantJump = useRef(false);
-  const xPx = useRef(0); // offset from viewport centre, px
-  const jumpPx = useRef(0); // height above ground, px
-  const vyPx = useRef(0);
+  const keys = useRef({ left: false, right: false, up: false, down: false });
+  const pos = useRef<{ x: number; y: number } | null>(null); // centre, viewport px
   const facing = useRef(1); // -1 left, 1 right
   const oneShot = useRef(false); // a one-shot clip is playing
   const current = useRef<string | null>(null);
-  const lastScrollAt = useRef(0);
-  const scrollDir = useRef(0);
   const [coarse] = useState(
     () => window.matchMedia("(pointer: coarse)").matches,
   );
@@ -87,11 +112,14 @@ export default function Character({ emote, posRef }: CharacterProps) {
       if (e.metaKey || e.ctrlKey || e.altKey) return;
       if (e.code === "KeyA") keys.current.left = true;
       if (e.code === "KeyD") keys.current.right = true;
-      if (e.code === "KeyW" && !e.repeat) wantJump.current = true;
+      if (e.code === "KeyW") keys.current.up = true;
+      if (e.code === "KeyS") keys.current.down = true;
     }
     function onKeyUp(e: KeyboardEvent) {
       if (e.code === "KeyA") keys.current.left = false;
       if (e.code === "KeyD") keys.current.right = false;
+      if (e.code === "KeyW") keys.current.up = false;
+      if (e.code === "KeyS") keys.current.down = false;
     }
     window.addEventListener("keydown", onKeyDown);
     window.addEventListener("keyup", onKeyUp);
@@ -99,20 +127,6 @@ export default function Character({ emote, posRef }: CharacterProps) {
       window.removeEventListener("keydown", onKeyDown);
       window.removeEventListener("keyup", onKeyUp);
     };
-  }, [coarse]);
-
-  // Mobile: walk in the direction of scrolling.
-  useEffect(() => {
-    if (!coarse) return;
-    let lastY = window.scrollY;
-    function onScroll() {
-      const y = window.scrollY;
-      scrollDir.current = y > lastY ? 1 : y < lastY ? -1 : scrollDir.current;
-      lastY = y;
-      lastScrollAt.current = performance.now();
-    }
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
   }, [coarse]);
 
   useFrame((state, delta) => {
@@ -127,57 +141,71 @@ export default function Character({ emote, posRef }: CharacterProps) {
       ? CHARACTER_HEIGHT_PX.mobile
       : CHARACTER_HEIGHT_PX.desktop;
 
-    let dir = 0;
-    if (coarse) {
-      const active = performance.now() - lastScrollAt.current < 1200;
-      dir = active ? scrollDir.current : 0;
-    } else {
-      dir = (keys.current.right ? 1 : 0) - (keys.current.left ? 1 : 0);
+    if (pos.current === null) {
+      pos.current = { x: pxW * REST_POINT.x, y: pxH * REST_POINT.y };
     }
-    if (dir !== 0) facing.current = dir;
+    const p = pos.current;
 
-    const halfW = pxW / 2 - heightPx / 2;
-    xPx.current = Math.min(
-      Math.max(xPx.current + dir * WALK_SPEED_PX * delta, -halfW),
-      halfW,
+    let dx = 0;
+    let dy = 0;
+    if (coarse) {
+      // Touch devices: glide toward the nearest uncollected orb in view,
+      // otherwise drift back to the resting spot.
+      const target = nearestOrbTarget(anchors, collected, p, pxW, pxH) ?? {
+        x: pxW * REST_POINT.x,
+        y: pxH * REST_POINT.y,
+      };
+      const ox = target.x - p.x;
+      const oy = target.y - p.y;
+      const dist = Math.hypot(ox, oy);
+      if (dist > 6) {
+        dx = ox / dist;
+        dy = oy / dist;
+      }
+    } else {
+      dx = (keys.current.right ? 1 : 0) - (keys.current.left ? 1 : 0);
+      dy = (keys.current.down ? 1 : 0) - (keys.current.up ? 1 : 0);
+      const len = Math.hypot(dx, dy);
+      if (len > 0) {
+        dx /= len;
+        dy /= len;
+      }
+    }
+    const moving = dx !== 0 || dy !== 0;
+    if (dx !== 0) facing.current = dx > 0 ? 1 : -1;
+
+    const minX = heightPx / 2 + EDGE_MARGIN_PX;
+    const minY = heightPx / 2 + EDGE_MARGIN_PX;
+    p.x = Math.min(
+      Math.max(p.x + dx * MOVE_SPEED_PX * delta, minX),
+      pxW - minX,
+    );
+    p.y = Math.min(
+      Math.max(p.y + dy * MOVE_SPEED_PX * delta, minY),
+      pxH - minY,
     );
 
-    if (wantJump.current && jumpPx.current === 0) {
-      vyPx.current = JUMP_VELOCITY_PX;
-      if (!oneShot.current) {
-        oneShot.current = true;
-        playClip(JUMP_CLIP, true);
-      }
-    }
-    wantJump.current = false;
-    if (jumpPx.current > 0 || vyPx.current !== 0) {
-      jumpPx.current += vyPx.current * delta;
-      vyPx.current -= GRAVITY_PX * delta;
-      if (jumpPx.current <= 0) {
-        jumpPx.current = 0;
-        vyPx.current = 0;
-      }
-    }
-
     if (!oneShot.current) {
-      playClip(dir !== 0 ? WALK_CLIP : DEFAULT_CLIP);
+      playClip(moving ? WALK_CLIP : DEFAULT_CLIP);
     }
 
+    // Gentle hover bob while idle keeps the explorer feeling alive.
+    const bobPx = moving ? 0 : Math.sin(state.clock.elapsedTime * 2) * 4;
     const scale = (heightPx * unitsPerPx) / CHARACTER_MODEL_HEIGHT;
-    const groundY = -viewport.height / 2 + GROUND_MARGIN_PX * unitsPerPx;
     g.scale.setScalar(scale);
+    // Model origin sits at the feet; position from the centre point.
     g.position.set(
-      xPx.current * unitsPerPx,
-      groundY + jumpPx.current * unitsPerPx,
+      (p.x - pxW / 2) * unitsPerPx,
+      (pxH / 2 - (p.y + heightPx / 2 - bobPx)) * unitsPerPx,
       0,
     );
     const targetRot =
-      dir !== 0 ? (facing.current > 0 ? Math.PI / 2 : -Math.PI / 2) : 0;
+      dx !== 0 ? (facing.current > 0 ? Math.PI / 2 : -Math.PI / 2) : 0;
     g.rotation.y += (targetRot - g.rotation.y) * Math.min(1, delta * 8);
 
     // Character centre in viewport px from the top-left corner.
-    posRef.current.x = pxW / 2 + xPx.current;
-    posRef.current.y = pxH - GROUND_MARGIN_PX - jumpPx.current - heightPx / 2;
+    posRef.current.x = p.x;
+    posRef.current.y = p.y;
   });
 
   return (

@@ -24,18 +24,18 @@ export const CHARACTER_HEIGHT_PX = { desktop: 110, mobile: 64 };
 
 export const DEFAULT_CLIP = "Idle";
 export const WALK_CLIP = "Walking";
-export const JUMP_CLIP = "Jump";
 export const VICTORY_CLIP = "Dance";
 
-export const GROUND_MARGIN_PX = 48;
-export const WALK_SPEED_PX = 260;
-export const JUMP_VELOCITY_PX = 800;
-export const GRAVITY_PX = 2000;
+export const MOVE_SPEED_PX = 320;
+// Padding between the character body and the viewport edge.
+export const EDGE_MARGIN_PX = 12;
+// Where the character settles when it has nothing to chase (viewport fractions).
+export const REST_POINT = { x: 0.5, y: 0.78 };
 
 export const ORB_DIAMETER_PX = 26;
-export const ORB_MIN_HEIGHT_PX = 40;
-export const ORB_MAX_HEIGHT_PX = 200;
 export const COLLECT_RADIUS_PX = 80;
+
+export const COMPASS_ORBIT_PX = 70;
 
 export const HIDDEN_STORAGE_KEY = "game-hidden";
 export const HELP_SEEN_STORAGE_KEY = "game-help-seen";

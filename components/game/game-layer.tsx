@@ -152,7 +152,12 @@ export default function GameLayer({ onHide }: { onHide: () => void }) {
           <ambientLight intensity={1.2} />
           <directionalLight position={[3, 5, 4]} intensity={1.5} />
           <Suspense fallback={null}>
-            <Character emote={emote} posRef={posRef} />
+            <Character
+              emote={emote}
+              posRef={posRef}
+              anchors={anchors}
+              collected={progress.collected}
+            />
           </Suspense>
           <Collectibles
             anchors={anchors}

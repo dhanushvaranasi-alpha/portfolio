@@ -3,13 +3,7 @@
 import { useRef } from "react";
 import * as THREE from "three";
 import { useFrame } from "@react-three/fiber";
-import {
-  COLLECT_RADIUS_PX,
-  GROUND_MARGIN_PX,
-  ORB_DIAMETER_PX,
-  ORB_MAX_HEIGHT_PX,
-  ORB_MIN_HEIGHT_PX,
-} from "@/lib/game-config";
+import { COLLECT_RADIUS_PX, ORB_DIAMETER_PX } from "@/lib/game-config";
 
 export type OrbAnchor = {
   id: string;
@@ -39,7 +33,7 @@ export function measureOrbAnchors(): OrbAnchor[] {
 type CollectiblesProps = {
   anchors: OrbAnchor[];
   collected: string[];
-  posRef: React.MutableRefObject<{ x: number; y: number }>;
+  posRef: React.RefObject<{ x: number; y: number }>;
   onCollect: (id: string) => void;
 };
 
@@ -81,16 +75,13 @@ export default function Collectibles({
         continue;
       }
 
-      // Clamp orbs into the vertical band the character can reach.
-      const vy = Math.min(
-        Math.max(rawVy, pxH - GROUND_MARGIN_PX - ORB_MAX_HEIGHT_PX),
-        pxH - GROUND_MARGIN_PX - ORB_MIN_HEIGHT_PX,
-      );
+      // Orbs sit exactly where their content is; the character flies to them.
       const bob = Math.sin(t * 2 + anchor.docX) * 6;
+      const vy = rawVy + bob;
       g.visible = true;
       g.position.set(
         (vx - pxW / 2) * unitsPerPx,
-        (pxH / 2 - (vy + bob)) * unitsPerPx,
+        (pxH / 2 - vy) * unitsPerPx,
         0,
       );
 
@@ -143,7 +134,7 @@ const PARTICLES = Array.from({ length: 10 }, (_, i) => i);
 export function VictoryBurst({
   posRef,
 }: {
-  posRef: React.MutableRefObject<{ x: number; y: number }>;
+  posRef: React.RefObject<{ x: number; y: number }>;
 }) {
   const group = useRef<THREE.Group>(null);
   const start = useRef<number | null>(null);
