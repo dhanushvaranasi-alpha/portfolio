@@ -10,6 +10,19 @@ import {
 } from "@/lib/content";
 import { chatbotFaq } from "@/lib/chatbot-faq";
 
+// Single source for the contact email (derived from site content) and the
+// fixed decline phrase. The route detects unanswered questions by matching
+// DECLINE_MARKER, so the phrase here and the prompt rule must stay in sync.
+export const contactEmail =
+  site.links
+    .find((l) => l.href.startsWith("mailto:"))
+    ?.href.replace("mailto:", "") ?? "";
+export const DECLINE_MARKER = "I do not have that information";
+
+function linkByLabel(label: string): string {
+  return site.links.find((l) => l.label === label)?.href ?? "";
+}
+
 // Builds the full system prompt from the site's single source of truth
 // plus the authored FAQ. Composed at request time on the server only.
 export function buildSystemPrompt(): string {
@@ -46,7 +59,7 @@ VOICE AND FORMAT
 - Never use em dashes or en dashes.
 
 HARD RULES
-- Answer ONLY from the knowledge below. If the answer is not there, say you do not have that information and offer the email ${site.links[0].href.replace("mailto:", "")}. Do not guess.
+- Answer ONLY from the knowledge below. If the answer is not there, reply with a sentence that begins exactly with "${DECLINE_MARKER}" and offer the email ${contactEmail}. Do not guess.
 - Supply Chain Tracer is a personal project in active development. Its numbers are DESIGN TARGETS, not achieved results. Always frame them that way.
 - Compensation questions: do not discuss numbers; politely direct to email.
 - Off-topic requests (poems, code help, general knowledge, anything not about Dhanush) get a brief friendly deflection back to Dhanush's work.
@@ -81,5 +94,5 @@ Certifications: ${certifications.join("; ")}
 Frequently asked:
 ${faqText}
 
-Contact: email ${site.links[0].href.replace("mailto:", "")}, LinkedIn ${site.links[1].href}, GitHub ${site.links[2].href}, phone ${site.links[3].label}.`;
+Contact: email ${contactEmail}, LinkedIn ${linkByLabel("LinkedIn")}, GitHub ${linkByLabel("GitHub")}, phone ${site.links.find((l) => l.href.startsWith("tel:"))?.label ?? ""}.`;
 }

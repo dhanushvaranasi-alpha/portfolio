@@ -31,9 +31,11 @@ will state them as real facts; replace them first.
 - `lib/chatbot-prompt.ts` composes the system prompt at request time
   from `lib/content.ts` (single source of truth for experience,
   project, skills, education, contact) plus `lib/chatbot-faq.ts`.
-  The prompt enforces: first person, 2-4 sentences, exact numbers,
-  Supply Chain Tracer framed as design targets, salary redirected to
-  email, unknowns declined with the email, injection attempts ignored.
+  The prompt instructs (soft rules, not guarantees): first person, 2-4
+  sentences, exact numbers, Supply Chain Tracer framed as design
+  targets, salary redirected to email, unknowns declined with a fixed
+  phrase ("I do not have that information") plus the email, injection
+  attempts deflected.
 - `app/api/chat/route.ts` (POST): validates shape (max 12 messages,
   1,000 chars each, last must be user), best-effort per-instance rate
   limit (20/min/IP), calls Z.ai chat completions
@@ -41,9 +43,12 @@ will state them as real facts; replace them first.
   `stream: true`, temperature 0.3, max_tokens 400, 30s timeout),
   parses the SSE stream server-side, and forwards plain text chunks.
 - Logging (Vercel dashboard): `chatbot-question` for every question;
-  `chatbot-unanswered` when the finished reply contains the contact
-  email (the decline contract guarantees it). No visitor identity is
-  recorded beyond what they type. Upgrade path: a Supabase table.
+  `chatbot-unanswered` when the finished reply contains the fixed
+  decline phrase the prompt mandates (so salary and contact answers,
+  which also mention the email, do not false-positive). Heuristic, not
+  a guarantee: a model that rewords its decline slips past. No visitor
+  identity is recorded beyond what they type. Upgrade path: a Supabase
+  table.
 - `components/chat/chat-widget.tsx`: glass bubble bottom-right, panel
   with the AI disclaimer, four suggestion chips, streaming message
   list (`data-lenis-prevent` so panel scroll does not fight Lenis),

@@ -1,11 +1,14 @@
-import { buildSystemPrompt } from "@/lib/chatbot-prompt";
+import {
+  buildSystemPrompt,
+  contactEmail,
+  DECLINE_MARKER,
+} from "@/lib/chatbot-prompt";
 
 const ZAI_URL = "https://api.z.ai/api/paas/v4/chat/completions";
 const MAX_MESSAGES = 12;
 const MAX_MESSAGE_CHARS = 1000;
 const MAX_TOKENS = 400;
 const UPSTREAM_TIMEOUT_MS = 30_000;
-const CONTACT_EMAIL = "dhanushvaranasi@gmail.com";
 
 // Best-effort per-instance rate limiting. Serverless instances do not share
 // this map; the real protections are the request caps, short max_tokens,
@@ -16,6 +19,12 @@ const hits = new Map<string, { count: number; windowStart: number }>();
 
 function rateLimited(ip: string): boolean {
   const now = Date.now();
+  // Opportunistic pruning keeps the map bounded on warm instances.
+  if (hits.size > 500) {
+    for (const [key, value] of hits) {
+      if (now - value.windowStart > RATE_WINDOW_MS) hits.delete(key);
+    }
+  }
   const entry = hits.get(ip);
   if (!entry || now - entry.windowStart > RATE_WINDOW_MS) {
     hits.set(ip, { count: 1, windowStart: now });
@@ -50,7 +59,7 @@ export async function POST(request: Request): Promise<Response> {
   const apiKey = process.env.ZAI_API_KEY;
   if (!apiKey) {
     return Response.json(
-      { error: `Chat is not configured yet. Email ${CONTACT_EMAIL} instead.` },
+      { error: `Chat is not configured yet. Email ${contactEmail} instead.` },
       { status: 503 },
     );
   }
@@ -107,19 +116,41 @@ export async function POST(request: Request): Promise<Response> {
     );
     return Response.json(
       {
-        error: `I could not reach my brain just now. Email ${CONTACT_EMAIL} instead.`,
+        error: `I could not reach my brain just now. Email ${contactEmail} instead.`,
       },
       { status: 502 },
     );
   }
 
   // Parse the upstream SSE stream and forward plain text chunks. Buffer the
-  // full reply so declines (which must contain the contact email per the
-  // system prompt) can be logged for FAQ growth.
+  // full reply so declines (which start with the fixed DECLINE_MARKER phrase
+  // per the system prompt) can be logged for FAQ growth.
   const decoder = new TextDecoder();
   const encoder = new TextEncoder();
   let sseBuffer = "";
   let fullReply = "";
+
+  function handleLine(
+    line: string,
+    controller: TransformStreamDefaultController<Uint8Array>,
+  ) {
+    const data = line.trim();
+    if (!data.startsWith("data:")) return;
+    const payload = data.slice(5).trim();
+    if (payload === "[DONE]") return;
+    try {
+      const parsed = JSON.parse(payload) as {
+        choices?: { delta?: { content?: string } }[];
+      };
+      const text = parsed.choices?.[0]?.delta?.content;
+      if (text) {
+        fullReply += text;
+        controller.enqueue(encoder.encode(text));
+      }
+    } catch {
+      // Ignore malformed SSE lines; the stream continues.
+    }
+  }
 
   const stream = upstream.body.pipeThrough(
     new TransformStream<Uint8Array, Uint8Array>({
@@ -127,27 +158,12 @@ export async function POST(request: Request): Promise<Response> {
         sseBuffer += decoder.decode(chunk, { stream: true });
         const lines = sseBuffer.split("\n");
         sseBuffer = lines.pop() ?? "";
-        for (const line of lines) {
-          const data = line.trim();
-          if (!data.startsWith("data:")) continue;
-          const payload = data.slice(5).trim();
-          if (payload === "[DONE]") continue;
-          try {
-            const parsed = JSON.parse(payload) as {
-              choices?: { delta?: { content?: string } }[];
-            };
-            const text = parsed.choices?.[0]?.delta?.content;
-            if (text) {
-              fullReply += text;
-              controller.enqueue(encoder.encode(text));
-            }
-          } catch {
-            // Ignore malformed SSE lines; the stream continues.
-          }
-        }
+        for (const line of lines) handleLine(line, controller);
       },
-      flush() {
-        if (fullReply.includes(CONTACT_EMAIL)) {
+      flush(controller) {
+        // Process any final line the upstream sent without a trailing newline.
+        if (sseBuffer) handleLine(sseBuffer, controller);
+        if (fullReply.includes(DECLINE_MARKER)) {
           console.log(JSON.stringify({ tag: "chatbot-unanswered", question }));
         }
       },

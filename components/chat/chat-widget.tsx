@@ -56,16 +56,18 @@ export default function ChatWidget() {
     const content = text.trim();
     if (!content || busy) return;
     setDraft("");
-    const history = [...messages, { role: "user" as const, content }].slice(
-      -HISTORY_CAP,
-    );
-    setMessages([...history, { role: "assistant", content: "" }]);
+    // The UI keeps the full conversation; only the request payload is
+    // capped to the API's message limit.
+    const full = [...messages, { role: "user" as const, content }];
+    const payload = full.slice(-HISTORY_CAP);
+    setMessages([...full, { role: "assistant", content: "" }]);
     setBusy(true);
+    let reply = "";
     try {
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: history }),
+        body: JSON.stringify({ messages: payload }),
       });
       if (!res.ok || !res.body) {
         let message = "Something went wrong. Try again in a moment.";
@@ -80,7 +82,6 @@ export default function ChatWidget() {
       }
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
-      let reply = "";
       for (;;) {
         const { done, value } = await reader.read();
         if (done) break;
@@ -97,12 +98,12 @@ export default function ChatWidget() {
         );
       }
     } catch {
-      setMessages((current) =>
-        replaceLastAssistant(
-          current,
-          "Connection hiccup. Try again in a moment.",
-        ),
-      );
+      // Keep whatever streamed before the drop; never erase text the
+      // visitor already read.
+      const kept = reply
+        ? `${reply} (the connection dropped there; ask again for the rest)`
+        : "Connection hiccup. Try again in a moment.";
+      setMessages((current) => replaceLastAssistant(current, kept));
     } finally {
       setBusy(false);
     }
@@ -134,6 +135,7 @@ export default function ChatWidget() {
       {open ? (
         <div
           role="dialog"
+          aria-modal="true"
           aria-label="Chat with Dhanush's AI"
           className="glass fixed right-5 bottom-21 z-40 flex h-[min(520px,70dvh)] w-95 max-w-[calc(100vw-2.5rem)] flex-col overflow-hidden rounded-3xl"
         >
