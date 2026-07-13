@@ -1,5 +1,6 @@
 import AuroraBackground from "@/components/aurora-background";
 import About from "@/components/about";
+import ChatWidget from "@/components/chat/chat-widget";
 import Particles from "@/components/particles";
 import EducationCerts from "@/components/education-certs";
 import Experience from "@/components/experience";
@@ -24,6 +25,7 @@ export default function Home() {
         <EducationCerts />
       </main>
       <Footer />
+      <ChatWidget />
     </>
   );
 }
