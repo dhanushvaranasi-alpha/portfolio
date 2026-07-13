@@ -27,6 +27,15 @@ export default function FeaturedProject() {
               end: "+=1800",
               pin: true,
               scrub: 0.6,
+              // The particle field builds its network graph in sync with
+              // this scrub without coupling to this component.
+              onUpdate: (self) => {
+                window.dispatchEvent(
+                  new CustomEvent("tracer-pin-progress", {
+                    detail: self.progress,
+                  }),
+                );
+              },
             },
           });
           tl.from("[data-tracer-heading]", { y: 60, opacity: 0 })
