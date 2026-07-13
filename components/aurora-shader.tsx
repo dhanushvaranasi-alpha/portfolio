@@ -90,16 +90,21 @@ void main() {
   // Faint lift around the pointer.
   col += accent * mInf * 0.05;
 
-  // Click blooms: expanding soft rings of accent light.
+  // Click blooms: expanding soft rings of accent light. Dead blooms are
+  // skipped with a branch: pow(x, y) is undefined for x < 0 in GLSL (NaN
+  // on some GPUs, and NaN survives multiplication by zero), so the ring
+  // falloff squares by multiplication and never runs for inactive slots.
   for (int i = 0; i < ${MAX_BLOOMS}; i++) {
     vec3 b = u_blooms[i];
     float age = u_time - b.z;
-    float active = step(0.0, b.z) * step(0.0, age) * step(age, 1.6);
-    vec2 bUv = vec2(b.x, u_res.y - b.y) / u_res;
-    float d = distance(auv, bUv * vec2(aspect, 1.0));
-    float k = clamp(age / 1.6, 0.0, 1.0);
-    float ring = exp(-pow((d - k * 0.45) * 9.0, 2.0));
-    col += accent * ring * (1.0 - k) * 0.12 * active;
+    if (b.z >= 0.0 && age >= 0.0 && age <= 1.6) {
+      vec2 bUv = vec2(b.x, u_res.y - b.y) / u_res;
+      float d = distance(auv, bUv * vec2(aspect, 1.0));
+      float k = age / 1.6;
+      float delta = (d - k * 0.45) * 9.0;
+      float ring = exp(-delta * delta);
+      col += accent * ring * (1.0 - k) * 0.12;
+    }
   }
 
   // Global click surge, plus a short fade-in on mount.
@@ -135,11 +140,14 @@ export default function AuroraShader() {
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
+    // premultipliedAlpha: false because the shader writes straight
+    // (non-premultiplied) alpha; the default would composite too bright.
     const gl = canvas.getContext("webgl", {
       alpha: true,
       antialias: false,
       depth: false,
       stencil: false,
+      premultipliedAlpha: false,
     });
     if (!gl) return;
 
