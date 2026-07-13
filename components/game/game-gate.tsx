@@ -81,7 +81,7 @@ export default function GameGate() {
         onClick={() => setHiddenPref(false)}
         className="glass text-muted hover:text-accent fixed bottom-5 left-5 z-40 rounded-full px-4 py-2 font-mono text-xs transition-colors"
       >
-        Show game
+        Show robot
       </button>
     );
   }

@@ -13,10 +13,7 @@ export default function EducationCerts() {
             title="Education and certifications"
           />
         </Reveal>
-        <div
-          data-game-collectible="education"
-          className="grid gap-5 md:grid-cols-2"
-        >
+        <div className="grid gap-5 md:grid-cols-2">
           <Reveal>
             <div className="glass h-full rounded-2xl p-6 md:p-8">
               <h3 className="font-heading text-lg font-medium">Education</h3>

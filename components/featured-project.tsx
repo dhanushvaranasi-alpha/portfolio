@@ -76,17 +76,10 @@ export default function FeaturedProject() {
               ))}
             </ul>
           </div>
-          <p
-            data-tracer-what
-            data-game-collectible="project"
-            className="max-w-3xl text-lg leading-relaxed"
-          >
+          <p data-tracer-what className="max-w-3xl text-lg leading-relaxed">
             {project.what}
           </p>
-          <div
-            data-game-collectible="project"
-            className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4"
-          >
+          <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {project.stats.map((stat) => (
               <div
                 key={stat.label}

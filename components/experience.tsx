@@ -51,11 +51,7 @@ export default function Experience() {
             aria-hidden="true"
             className="from-accent/70 via-accent/30 absolute top-0 bottom-0 left-[7px] w-px bg-gradient-to-b to-transparent"
           />
-          <ol
-            ref={listRef}
-            data-game-collectible="experience"
-            className="space-y-10"
-          >
+          <ol ref={listRef} className="space-y-10">
             {experience.map((role) => (
               <li
                 key={`${role.company}-${role.dates}`}
