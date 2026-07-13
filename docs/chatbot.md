@@ -10,7 +10,11 @@ contact email and logged for FAQ growth.
 - `ZAI_API_KEY` (required, server-only): Z.ai API key. Set in
   `.env.local` and Vercel env settings; never exposed to the browser.
   Without it the route returns a friendly 503 and the widget shows it.
-- `ZAI_MODEL` (optional, server-only): defaults to `glm-5.1`.
+- `ZAI_MODEL` (optional, server-only): defaults to `glm-4.7-flash`,
+  which is on Z.ai's free tier. Paid models like `glm-5.1` return
+  "insufficient balance" (code 1113) until the account has credit.
+  Thinking is disabled in the request so hybrid reasoning models answer
+  directly.
 - `NEXT_PUBLIC_CHATBOT` (default enabled): set `false` to remove the
   widget entirely.
 

@@ -84,11 +84,16 @@ export async function POST(request: Request): Promise<Response> {
       Authorization: `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
-      model: process.env.ZAI_MODEL ?? "glm-5.1",
+      // glm-4.7-flash is on Z.ai's free tier; override via ZAI_MODEL after
+      // adding credit if a bigger model is wanted. Thinking is disabled so
+      // hybrid reasoning models answer directly instead of spending the
+      // token budget on reasoning.
+      model: process.env.ZAI_MODEL ?? "glm-4.7-flash",
       messages: [{ role: "system", content: buildSystemPrompt() }, ...messages],
       temperature: 0.3,
       max_tokens: MAX_TOKENS,
       stream: true,
+      thinking: { type: "disabled" },
     }),
     signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS),
   }).catch(() => null);
