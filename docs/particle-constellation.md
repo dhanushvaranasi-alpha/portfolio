@@ -38,7 +38,13 @@ z-index, no new dependencies.
   multi-hop story in light. Red appears nowhere else on the site.
 - Mobile: 700 particles, no repel or connection lines (no cursor), tap
   ripples work via pointer events, scroll streaking works from touch
-  scrolling.
+  scrolling. Below the 768px breakpoint the pinned scene does not exist
+  (its GSAP matchMedia is desktop-only), so the graph reveals its edges
+  and fires the pulse on a ~5s timer after forming instead of following
+  a scrub. Height-only resizes under 150px (mobile browser chrome
+  showing/hiding) resize the canvas without reshuffling formations.
+- Physics are normalized to a 60fps baseline with delta time, so 120Hz
+  displays and throttled tabs behave identically.
 
 ## Files
 

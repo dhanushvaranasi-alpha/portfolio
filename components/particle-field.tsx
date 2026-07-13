@@ -36,6 +36,7 @@ const FORMATION_META: Record<FormationName, { dim: number; lines: number }> = {
   orbit: { dim: 0.9, lines: 0.8 },
 };
 
+const TAU = Math.PI * 2;
 const DESKTOP_COUNT = 1800;
 const MOBILE_COUNT = 700;
 const REPEL_RADIUS = 130;
@@ -284,11 +285,17 @@ export default function ParticleField() {
     let formedAt = performance.now();
     let graph: Graph = buildGraph(W, H);
     let pinProgress = 0;
+    let pinDriven = false;
 
     function applyFormation(name: FormationName) {
       formation = name;
       formedAt = performance.now();
-      if (name === "graph") graph = buildGraph(W, H);
+      if (name === "graph") {
+        graph = buildGraph(W, H);
+        // Fresh build on every entry; the scrub (or the mobile timer)
+        // drives it forward again from here.
+        pinProgress = 0;
+      }
       const targets =
         name === "ambient"
           ? ambientTargets(count, W, H)
@@ -329,7 +336,10 @@ export default function ParticleField() {
 
     function onPinProgress(e: Event) {
       const detail = (e as CustomEvent<number>).detail;
-      if (typeof detail === "number") pinProgress = detail;
+      if (typeof detail === "number") {
+        pinProgress = detail;
+        pinDriven = true;
+      }
     }
     window.addEventListener("tracer-pin-progress", onPinProgress);
 
@@ -339,8 +349,6 @@ export default function ParticleField() {
       const el = document.getElementById(id);
       if (el) watched.push({ el, name });
     }
-    const footer = document.querySelector("footer");
-    if (footer) watched.push({ el: footer, name: "orbit" });
     const observer = new IntersectionObserver(
       (entries) => {
         for (const entry of entries) {
@@ -353,12 +361,33 @@ export default function ParticleField() {
     );
     watched.forEach((w) => observer.observe(w.el));
 
+    // The footer is shorter than the mid-viewport band the section observer
+    // uses, so it gets its own threshold-based observer.
+    const footer = document.querySelector("footer");
+    const footerObserver = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && formation !== "orbit") {
+          applyFormation("orbit");
+        }
+      },
+      { threshold: 0.4 },
+    );
+    if (footer) footerObserver.observe(footer);
+
+    // Mobile browser chrome shows/hides on scroll, firing resize with small
+    // height-only changes; rebuilding formations for those would visibly
+    // scatter the field mid-scroll. Only regenerate for real layout changes.
     let resizeTimer: number | undefined;
+    let prevW = W;
+    let prevH = H;
     function onResize() {
       window.clearTimeout(resizeTimer);
       resizeTimer = window.setTimeout(() => {
         resizeCanvas();
-        applyFormation(formation);
+        const layoutChanged = W !== prevW || Math.abs(H - prevH) > 150;
+        prevW = W;
+        prevH = H;
+        if (layoutChanged) applyFormation(formation);
       }, 200);
     }
     window.addEventListener("resize", onResize);
@@ -367,6 +396,7 @@ export default function ParticleField() {
     let lastScrollY = window.scrollY;
     let scrollVel = 0;
     let raf = 0;
+    let lastFrame = performance.now();
 
     function frame(now: number) {
       if (!ctx) return;
@@ -374,17 +404,28 @@ export default function ParticleField() {
       const t = now / 1000;
       const meta = FORMATION_META[formation];
 
+      // Normalize physics to a 60fps baseline so 120Hz displays and
+      // throttled tabs behave identically. dt is in "60fps frames".
+      const dt = Math.min(now - lastFrame, 50) / 16.667;
+      lastFrame = now;
+      const damp = Math.pow(0.9, dt);
+
       // Smoothed scroll velocity drives the streak effect.
       const dy = window.scrollY - lastScrollY;
       lastScrollY = window.scrollY;
-      scrollVel += (dy - scrollVel) * 0.2;
+      scrollVel += (dy - scrollVel) * Math.min(0.2 * dt, 1);
 
       // Graph edges reveal with the pinned scrub (0.3 -> 0.7), and the
-      // sanction pulse propagates hop by hop after 0.7.
+      // sanction pulse propagates hop by hop after 0.7. Below the 768px
+      // breakpoint the pinned scene (and its progress event) does not
+      // exist, so the graph plays out on a timer after forming instead.
       if (formation === "graph") {
-        const reveal = Math.min(Math.max((pinProgress - 0.3) / 0.4, 0), 1);
+        const prog = pinDriven
+          ? pinProgress
+          : Math.min((now - formedAt) / 5000, 1);
+        const reveal = Math.min(Math.max((prog - 0.3) / 0.4, 0), 1);
         const shown = Math.floor(reveal * graph.edges.length);
-        const pulseK = Math.min(Math.max((pinProgress - 0.7) / 0.3, 0), 1);
+        const pulseK = Math.min(Math.max((prog - 0.7) / 0.3, 0), 1);
         const litHops = pulseK * (graph.maxHop + 1);
         for (let i = 0; i < shown; i++) {
           const [a, b] = graph.edges[i];
@@ -409,7 +450,7 @@ export default function ParticleField() {
             const flare = 1 - Math.min(litHops - graph.hops[i], 1) * 0.5;
             ctx.fillStyle = `rgba(255, 96, 96, ${0.22 * flare})`;
             ctx.beginPath();
-            ctx.arc(graph.nodes[i].x, graph.nodes[i].y, 9, 0, 7);
+            ctx.arc(graph.nodes[i].x, graph.nodes[i].y, 9, 0, TAU);
             ctx.fill();
           }
         }
@@ -423,18 +464,19 @@ export default function ParticleField() {
         const tx = active ? p.tx : p.px;
         const ty = active ? p.ty : p.py;
 
-        p.vx += (tx - p.x) * 0.012 + Math.sin(t * 0.7 + p.seed) * 0.012;
-        p.vy += (ty - p.y) * 0.012 + Math.cos(t * 0.6 + p.seed * 1.3) * 0.012;
+        p.vx += ((tx - p.x) * 0.012 + Math.sin(t * 0.7 + p.seed) * 0.012) * dt;
+        p.vy +=
+          ((ty - p.y) * 0.012 + Math.cos(t * 0.6 + p.seed * 1.3) * 0.012) * dt;
 
         // Scroll drag: the field lags behind fast scrolling, then springs back.
-        p.vy -= scrollVel * 0.05;
+        p.vy -= scrollVel * 0.05 * dt;
 
         if (fine) {
           const dx = p.x - mouse.x;
           const dyp = p.y - mouse.y;
           const md = Math.hypot(dx, dyp);
           if (md < REPEL_RADIUS && md > 0.01) {
-            const f = (1 - md / REPEL_RADIUS) * 0.9;
+            const f = (1 - md / REPEL_RADIUS) * 0.9 * dt;
             p.vx += (dx / md) * f;
             p.vy += (dyp / md) * f;
           }
@@ -449,15 +491,15 @@ export default function ParticleField() {
           const q = (rd - wave) / 42;
           const band = Math.exp(-(q * q)) * (1 - age / RIPPLE_MS);
           if (band > 0.01 && rd > 0.01) {
-            p.vx += ((p.x - r.x) / rd) * band * 2.4;
-            p.vy += ((p.y - r.y) / rd) * band * 2.4;
+            p.vx += ((p.x - r.x) / rd) * band * 2.4 * dt;
+            p.vy += ((p.y - r.y) / rd) * band * 2.4 * dt;
           }
         }
 
-        p.vx *= 0.9;
-        p.vy *= 0.9;
-        p.x += p.vx;
-        p.y += p.vy;
+        p.vx *= damp;
+        p.vy *= damp;
+        p.x += p.vx * dt;
+        p.y += p.vy * dt;
 
         const alpha = 0.42 * p.bright * meta.dim;
         const speed = Math.hypot(p.vx, p.vy);
@@ -472,7 +514,7 @@ export default function ParticleField() {
         } else {
           ctx.fillStyle = `rgba(150, 195, 255, ${alpha})`;
           ctx.beginPath();
-          ctx.arc(p.x, p.y, p.size, 0, 7);
+          ctx.arc(p.x, p.y, p.size, 0, TAU);
           ctx.fill();
         }
       }
@@ -505,6 +547,7 @@ export default function ParticleField() {
       cancelAnimationFrame(raf);
       if (!document.hidden) {
         lastScrollY = window.scrollY;
+        lastFrame = performance.now();
         raf = requestAnimationFrame(frame);
       }
     }
@@ -520,6 +563,7 @@ export default function ParticleField() {
       window.removeEventListener("resize", onResize);
       document.removeEventListener("visibilitychange", onVisibility);
       observer.disconnect();
+      footerObserver.disconnect();
     };
   }, []);
 
@@ -527,7 +571,7 @@ export default function ParticleField() {
     <canvas
       ref={canvasRef}
       aria-hidden="true"
-      className="pointer-events-none fixed inset-0 -z-10 h-full w-full"
+      className="pointer-events-none fixed inset-0 z-[-1] h-full w-full"
     />
   );
 }
