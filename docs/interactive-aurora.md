@@ -20,10 +20,11 @@ capable clients; strictly atmospheric, never intercepts input.
   (`components/aurora-background.tsx`, unchanged); the shader takes over
   after hydration with a ~1.5s fade-in.
 - `components/aurora-shader.tsx` renders one fullscreen quad with a raw
-  WebGL1 fragment shader (no three.js, no dependencies). Three fbm
-  curtain layers, vertically stretched and domain-warped, colored with
-  the theme tokens (#254ead, #4c2ead, #1e6cbe, accent #5aa2ff), with a
-  vertical falloff and edge vignette.
+  WebGL1 fragment shader (no three.js, no dependencies). Two undulating
+  ribbons flow horizontally across the page with vertical ray
+  striations, in natural auroral colors: oxygen-green core, teal wash,
+  pink lower fringe, faint violet upper band. Edge vignette keeps the
+  corners quiet.
 - Pointer input: `pointermove`/`pointerdown` on window (passive);
   position and velocity are lerped in JS each frame so the shader only
   sees calm values. Clicks push into a 3-slot bloom ring buffer

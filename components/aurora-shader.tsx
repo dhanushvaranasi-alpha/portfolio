@@ -51,46 +51,68 @@ float fbm(vec2 p) {
   return v;
 }
 
+// Curtain brightness profile around a ribbon: a bright core with a long
+// soft tail hanging below and a quick falloff above, like a real auroral
+// curtain seen from the ground. Defined for all d (no pow on negatives).
+float curtain(float d) {
+  float below = exp(d * 5.5);
+  float above = exp(-d * 20.0);
+  return mix(below, above, step(0.0, d));
+}
+
 void main() {
   vec2 uv = gl_FragCoord.xy / u_res;
   float aspect = u_res.x / u_res.y;
   vec2 auv = uv * vec2(aspect, 1.0);
-  float t = u_time * 0.03;
+  float x = uv.x * aspect;
+  float t = u_time * 0.05;
 
   // Pointer, converted from y-down pixels to y-up uv space.
   vec2 mUv = vec2(u_mouse.x, u_res.y - u_mouse.y) / u_res;
   float mDist = distance(auv, mUv * vec2(aspect, 1.0));
-  float mInf = smoothstep(0.5, 0.0, mDist);
+  float mInf = smoothstep(0.45, 0.0, mDist);
 
-  // Curtains: vertically stretched, domain-warped noise, bent by the
-  // pointer and sheared in the direction of travel.
-  vec2 q = vec2(uv.x * 2.2, uv.y * 0.9);
-  q.x += fbm(q * 1.5 + t) * 0.35;
-  q += (uv - mUv) * mInf * 0.25;
-  q += u_vel * mInf * 0.010;
-  float curtain = fbm(vec2(q.x * 2.0, q.y * 0.6 - t * 1.4));
-  float band = smoothstep(0.35, 0.85, curtain);
-  float curtain2 = fbm(vec2(q.x * 1.4 + 5.2, q.y * 0.5 + t * 1.1));
-  float band2 = smoothstep(0.45, 0.9, curtain2);
+  // Two ribbons flowing across the page, undulating slowly. The pointer
+  // gently tugs the ribbon height toward itself.
+  float wave = fbm(vec2(x * 0.9 - t * 0.9, t * 0.4)) - 0.5;
+  wave += (fbm(vec2(x * 2.3 + t * 0.6, t * 0.25)) - 0.5) * 0.35;
+  wave += (mUv.y - uv.y) * mInf * 0.15;
+  float wave2 = fbm(vec2(x * 0.7 + t * 0.7 + 11.0, t * 0.3)) - 0.5;
 
-  vec3 blue = vec3(0.145, 0.306, 0.678);
-  vec3 violet = vec3(0.298, 0.180, 0.678);
-  vec3 cyan = vec3(0.118, 0.424, 0.745);
-  vec3 accent = vec3(0.353, 0.635, 1.0);
+  float band1 = 0.66 + wave * 0.20;
+  float band2 = 0.84 + wave2 * 0.12;
+
+  // Vertical ray striations drifting sideways; pointer motion shears
+  // them locally in the direction of travel.
+  float rayShift = u_vel.x * mInf * 0.02;
+  float rays =
+    0.55 + 0.45 * fbm(vec2(x * 5.5 + t * 1.6 + rayShift, uv.y * 0.7));
+  float rays2 = 0.6 + 0.4 * fbm(vec2(x * 4.0 - t * 1.1 + 3.0, uv.y * 0.6));
+
+  float d1 = uv.y - band1;
+  float d2 = uv.y - band2;
+  float i1 = curtain(d1) * rays;
+  float i2 = curtain(d2) * rays2 * 0.45;
+
+  // Natural auroral colors: oxygen-green core with a teal wash, a pink
+  // lower fringe, and a faint violet upper band.
+  vec3 green = vec3(0.16, 0.85, 0.47);
+  vec3 teal = vec3(0.10, 0.52, 0.45);
+  vec3 pink = vec3(0.80, 0.28, 0.52);
+  vec3 violet = vec3(0.42, 0.30, 0.72);
 
   vec3 col = vec3(0.0);
-  col += blue * band * 0.50;
-  col += violet * band2 * 0.35;
-  col += cyan * band * band2 * 0.40;
-  col += accent * pow(band, 3.0) * 0.25;
-
-  // Brighter toward the upper region, like a sky.
-  col *= smoothstep(0.0, 0.45, uv.y) * (1.0 - 0.4 * uv.y) + 0.15;
+  col += green * i1 * 0.55;
+  col += teal * i1 * i1 * 0.25;
+  float fringe = exp(-(d1 + 0.045) * (d1 + 0.045) * 900.0);
+  col += pink * fringe * rays * 0.30;
+  col += violet * i2 * 0.50;
+  col += green * i2 * 0.18;
 
   // Faint lift around the pointer.
-  col += accent * mInf * 0.05;
+  col += green * mInf * 0.035;
 
-  // Click blooms: expanding soft rings of accent light. Dead blooms are
+  // Click blooms: expanding soft rings of auroral light. Dead blooms are
   // skipped with a branch: pow(x, y) is undefined for x < 0 in GLSL (NaN
   // on some GPUs, and NaN survives multiplication by zero), so the ring
   // falloff squares by multiplication and never runs for inactive slots.
@@ -103,7 +125,7 @@ void main() {
       float k = age / 1.6;
       float delta = (d - k * 0.45) * 9.0;
       float ring = exp(-delta * delta);
-      col += accent * ring * (1.0 - k) * 0.12;
+      col += mix(green, vec3(0.70, 0.95, 0.80), 0.4) * ring * (1.0 - k) * 0.10;
     }
   }
 
@@ -111,9 +133,9 @@ void main() {
   col *= (1.0 + u_boost) * min(u_time / 1.5, 1.0);
 
   // Edge vignette.
-  col *= smoothstep(1.15, 0.4, length(uv - 0.5) * 1.6);
+  col *= smoothstep(1.2, 0.45, length(uv - 0.5) * 1.5);
 
-  float alpha = clamp(max(max(col.r, col.g), col.b) * 1.5, 0.0, 0.55);
+  float alpha = clamp(max(max(col.r, col.g), col.b) * 1.5, 0.0, 0.6);
   gl_FragColor = vec4(col, alpha);
 }
 `;
