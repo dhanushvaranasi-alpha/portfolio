@@ -1,4 +1,4 @@
-import AuroraBackground from "@/components/aurora-background";
+import Aurora from "@/components/aurora";
 import About from "@/components/about";
 import EducationCerts from "@/components/education-certs";
 import Experience from "@/components/experience";
@@ -11,7 +11,7 @@ import Skills from "@/components/skills";
 export default function Home() {
   return (
     <>
-      <AuroraBackground />
+      <Aurora />
       <GlassNav />
       <main>
         <Hero />
