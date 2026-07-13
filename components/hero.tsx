@@ -60,7 +60,7 @@ export default function Hero() {
         </h1>
         <p
           data-hero-item
-          className="text-muted mt-6 font-mono text-sm md:text-base"
+          className="text-muted mt-6 font-mono text-sm md:text-[1rem]"
         >
           {site.title}
         </p>

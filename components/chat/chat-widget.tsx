@@ -139,9 +139,7 @@ export default function ChatWidget() {
         >
           <header className="border-edge flex items-baseline justify-between gap-3 border-b px-5 py-4">
             <div>
-              <p className="font-heading text-base font-medium">
-                Chat with Dhanush
-              </p>
+              <p className="font-heading font-medium">Chat with Dhanush</p>
               <p className="text-muted mt-0.5 text-xs">
                 An AI version of me. It can make mistakes; email me for anything
                 important.
