@@ -149,7 +149,14 @@ export default function AuroraShader() {
       stencil: false,
       premultipliedAlpha: false,
     });
-    if (!gl) return;
+    // A canvas has one context for life. If it is gone or lost (for
+    // example after a GPU reset), hide the canvas rather than let the
+    // browser paint a dead-canvas placeholder over the page.
+    if (!gl || gl.isContextLost()) {
+      canvas.style.display = "none";
+      return;
+    }
+    canvas.style.display = "";
 
     const vert = compileShader(gl, gl.VERTEX_SHADER, VERTEX_SRC);
     const frag = compileShader(gl, gl.FRAGMENT_SHADER, FRAGMENT_SRC);
@@ -268,15 +275,29 @@ export default function AuroraShader() {
       if (!document.hidden) raf = requestAnimationFrame(frame);
     }
     document.addEventListener("visibilitychange", onVisibility);
+
+    // Genuine context loss (GPU reset, driver crash): stop the loop and
+    // hide the canvas so the page just shows the dark background.
+    function onContextLost(e: Event) {
+      e.preventDefault();
+      cancelAnimationFrame(raf);
+      if (canvas) canvas.style.display = "none";
+    }
+    canvas.addEventListener("webglcontextlost", onContextLost);
+
     raf = requestAnimationFrame(frame);
 
+    // Deliberately NOT calling WEBGL_lose_context.loseContext() here: a
+    // canvas keeps one context for life, and React Strict Mode re-runs
+    // this effect on the same element in development. Killing the context
+    // on cleanup would leave the remount with a permanently dead canvas.
     return () => {
       cancelAnimationFrame(raf);
       window.removeEventListener("resize", resize);
       window.removeEventListener("pointermove", onPointerMove);
       window.removeEventListener("pointerdown", onPointerDown);
       document.removeEventListener("visibilitychange", onVisibility);
-      gl.getExtension("WEBGL_lose_context")?.loseContext();
+      canvas.removeEventListener("webglcontextlost", onContextLost);
     };
   }, []);
 
