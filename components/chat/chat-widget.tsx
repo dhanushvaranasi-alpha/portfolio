@@ -34,6 +34,7 @@ export default function ChatWidget() {
   const [draft, setDraft] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const bubbleRef = useRef<HTMLButtonElement>(null);
 
   // Keep the newest message in view while streaming.
   useEffect(() => {
@@ -44,7 +45,11 @@ export default function ChatWidget() {
   useEffect(() => {
     if (!open) return;
     function onKeyDown(e: KeyboardEvent) {
-      if (e.code === "Escape") setOpen(false);
+      if (e.code === "Escape") {
+        setOpen(false);
+        // Return focus to the bubble so keyboard users are not dropped.
+        bubbleRef.current?.focus();
+      }
     }
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
@@ -112,6 +117,7 @@ export default function ChatWidget() {
   return (
     <>
       <button
+        ref={bubbleRef}
         type="button"
         aria-label={open ? "Close chat" : "Chat with Dhanush's AI"}
         onClick={() => setOpen((v) => !v)}
@@ -149,7 +155,10 @@ export default function ChatWidget() {
             </div>
             <button
               type="button"
-              onClick={() => setOpen(false)}
+              onClick={() => {
+                setOpen(false);
+                bubbleRef.current?.focus();
+              }}
               className="text-muted hover:text-accent text-sm transition-colors"
             >
               Close
