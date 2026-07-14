@@ -43,12 +43,12 @@ export default function GlassNav() {
           : "pointer-events-none opacity-0 motion-safe:-translate-y-3"
       }`}
     >
-      <ul className="glass flex items-center gap-1 rounded-full px-2 py-2">
+      <ul className="glass flex max-w-[calc(100vw-1.5rem)] [scrollbar-width:none] items-center gap-0.5 overflow-x-auto rounded-full px-1.5 py-1.5 sm:gap-1 sm:px-2 sm:py-2 [&::-webkit-scrollbar]:hidden">
         {navItems.map((item) => (
           <li key={item.id}>
             <a
               href={`#${item.id}`}
-              className={`rounded-full px-4 py-1.5 text-sm transition-colors ${
+              className={`rounded-full px-2.5 py-1 text-xs whitespace-nowrap transition-colors sm:px-4 sm:py-1.5 sm:text-sm ${
                 active === item.id
                   ? "bg-accent/15 text-accent"
                   : "text-muted hover:text-ink"
