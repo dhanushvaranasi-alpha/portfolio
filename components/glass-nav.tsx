@@ -1,11 +1,31 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { navItems } from "@/lib/content";
 
 export default function GlassNav() {
   const [visible, setVisible] = useState(false);
   const [active, setActive] = useState("");
+  const listRef = useRef<HTMLUListElement>(null);
+
+  // On small screens the pill strip overflows and scrolls; keep the active
+  // item centred in it. Scrolls only the strip, never the page.
+  useEffect(() => {
+    const list = listRef.current;
+    if (!list || !active) return;
+    const link = list.querySelector<HTMLAnchorElement>(`a[href="#${active}"]`);
+    if (!link) return;
+    const listRect = list.getBoundingClientRect();
+    const linkRect = link.getBoundingClientRect();
+    const delta =
+      linkRect.left + linkRect.width / 2 - (listRect.left + listRect.width / 2);
+    list.scrollTo({
+      left: list.scrollLeft + delta,
+      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+        ? "auto"
+        : "smooth",
+    });
+  }, [active]);
 
   useEffect(() => {
     const hero = document.getElementById("top");
@@ -43,7 +63,10 @@ export default function GlassNav() {
           : "pointer-events-none opacity-0 motion-safe:-translate-y-3"
       }`}
     >
-      <ul className="glass flex max-w-[calc(100vw-1.5rem)] [scrollbar-width:none] items-center gap-0.5 overflow-x-auto rounded-full px-1.5 py-1.5 sm:gap-1 sm:px-2 sm:py-2 [&::-webkit-scrollbar]:hidden">
+      <ul
+        ref={listRef}
+        className="glass flex max-w-[calc(100vw-1.5rem)] [scrollbar-width:none] items-center gap-0.5 overflow-x-auto rounded-full px-1.5 py-1.5 sm:gap-1 sm:px-2 sm:py-2 [&::-webkit-scrollbar]:hidden"
+      >
         {navItems.map((item) => (
           <li key={item.id}>
             <a
